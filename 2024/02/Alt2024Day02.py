@@ -1,7 +1,7 @@
 # Challenge - Day 2, Year 2024
 # Solved in 2024
 # Puzzle Link: https://challenge.com/2024/day/2  # Web link without padding
-# Solution by: [author]
+# Solution by: [your_name]
 # Brief: [Code/Problem Description]
 
 #!/usr/bin/env python3

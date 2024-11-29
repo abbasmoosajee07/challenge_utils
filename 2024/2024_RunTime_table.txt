@@ -1,0 +1,10 @@
+Day   Time (s)    Percentage     Extension   Line Count  
+------------------------------------------------------------
+1     0.91        38.61          .py         35          
+2     0.70        29.65          .c          33          
+3     0.13        5.69           .rb         37          
+4     0.62        26.04          .jl         29          
+------------------------------------------------------------
+Total Time: 2.37 seconds
+Average Time: 0.59 seconds
+Median Time: 0.66 seconds
