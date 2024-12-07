@@ -20,9 +20,9 @@ if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
     repo_dir = os.path.abspath(script_dir)  # Repo directory (same level as script)
     base_dir = os.path.abspath(os.path.join(os.getcwd(), str(YEAR)))
-
+    selected_dir = repo_dir
     # Print repo directory for debugging purposes
-    print(f"Repository Directory: {repo_dir}")
+    print(f"Repository Directory: {selected_dir}")
 
     # Execute the challenge scripts
-    execute_challenge_scripts(CHALLENGE_NAME, YEAR, DAYS_TO_RUN, repo_dir, NUM_ITERATIONS, COLOR_2024)
+    execute_challenge_scripts(CHALLENGE_NAME, YEAR, DAYS_TO_RUN, selected_dir, NUM_ITERATIONS, COLOR_2024)

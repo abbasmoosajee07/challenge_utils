@@ -1,7 +1,10 @@
 LICENSE.txt
 README.md
 setup.py
+Benchmarks/Run_2024.py
 Benchmarks/__init__.py
+Benchmarks/benchmark1.py
+Benchmarks/benchmark2.py
 Benchmarks/execute_challenge.py
 Benchmarks/performance_analysis.py
 Benchmarks/script_runner.py

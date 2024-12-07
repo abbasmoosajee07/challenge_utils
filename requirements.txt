@@ -32,3 +32,4 @@ tornado==6.4.1
 traitlets==5.14.3
 tzdata==2024.2
 wcwidth==0.2.13
+pyqt5==5.15.11
