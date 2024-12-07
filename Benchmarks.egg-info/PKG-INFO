@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: Benchmarks
+Version: 0.1
+License-File: LICENSE.txt
+Requires-Dist: psutil
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: matplotlib
