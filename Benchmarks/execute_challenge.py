@@ -34,6 +34,7 @@ def execute_challenge_scripts(challenge, Year, days_to_run, base_dir, num_iterat
                     : Peak memory usage.
                     : Line counts.
                     : Languages used.
+                    : File size:
     """
     print(f"\n{challenge} - {Year}")
     print(f"Running scripts for days: {min(days_to_run)} to {max(days_to_run)} over {num_iterations} iterations.")
@@ -58,7 +59,7 @@ def execute_challenge_scripts(challenge, Year, days_to_run, base_dir, num_iterat
                 day_number = int(day_dir)
                 if day_number in days_to_run:
                     print(f"\nProcessing Day {day_number}...")
-                    day_time, day_lines, day_peak_memory = 0, 0, 0
+                    day_time, day_lines, day_size, day_peak_memory = 0, 0, 0, 0
                     languages = set()
 
                     # Execute all scripts for the day
@@ -69,9 +70,10 @@ def execute_challenge_scripts(challenge, Year, days_to_run, base_dir, num_iterat
                         if script_day == day_number:
                             result = run_script(script_file)
                             if result:
-                                extension, line_count, elapsed_time, peak_memory = result
-                                day_time += elapsed_time
+                                extension, line_count, file_size, elapsed_time, peak_memory = result
+                                day_time += elapsed_time * 1000
                                 day_lines += line_count
+                                day_size  += file_size
                                 day_peak_memory = max(day_peak_memory, peak_memory)  # Track highest memory usage
                                 languages.add(extension[1:])  # Store language/extension without dot
 
@@ -81,7 +83,7 @@ def execute_challenge_scripts(challenge, Year, days_to_run, base_dir, num_iterat
                         times_taken[day_number].append(day_time)  # Add this iteration's time
                         peak_memory_usage[day_number].append(day_peak_memory)
                         if day_number not in file_info:
-                            file_info[day_number] = (f".{languages_str}", day_lines)
+                            file_info[day_number] = (f".{languages_str}", day_lines, day_size)
 
     # Use averaged times for the table and plot
     run_df, table_txt = create_table(file_info, times_taken, peak_memory_usage, num_iterations, Year)

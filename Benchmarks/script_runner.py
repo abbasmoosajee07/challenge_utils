@@ -14,6 +14,14 @@ def get_file_line_count(file_path):
         print(f"Error reading {file_path}: {e}")
         return 0
 
+def get_file_size(file_path):
+    """Get the size of a file in kilobytes."""
+    try:
+        return os.path.getsize(file_path) / 1024
+    except Exception as e:
+        print(f"Error getting size of {file_path}: {e}")
+        return 0
+
 def monitor_memory_usage(process):
     """Monitor the peak memory usage of a subprocess."""
     try:
@@ -69,11 +77,13 @@ def run_script(file_path):
         peak_memory = monitor_memory_usage(process)
         process.wait()  # Ensure the process has finished
 
-        elapsed_time = time.time() - start_time
-        print(f"Finished running {file_name} in {elapsed_time:.2f} seconds with peak memory usage {peak_memory:.2f} MB.")
-
         line_count = get_file_line_count(file_path)
-        return extension, line_count, elapsed_time, peak_memory
+        file_size = get_file_size(file_path)
+
+        elapsed_time = time.time() - start_time
+        print(f"Finished running {file_name} in {elapsed_time:.2f} seconds with peak memory usage {peak_memory:.2f} MB. ")
+
+        return extension, line_count, file_size, elapsed_time, peak_memory
     except subprocess.CalledProcessError as e:
         print(f"Error executing {file_name}: {e}")
         return None

@@ -8,7 +8,7 @@ def create_table(file_info, times_taken, peak_memory_usage, num_iterations, year
     Saves the table to a file and creates a DataFrame with the data.
 
     Parameters:
-        file_info (dict): Contains programming language and line count for each day.
+        file_info (dict): Contains programming language, line count and file size for each day.
         times_taken (dict): Contains execution times for each day.
         peak_memory_usage (dict): Contains memory usage for each day.
         num_iterations (int): Number of iterations the tests ran.
@@ -44,20 +44,21 @@ def create_table(file_info, times_taken, peak_memory_usage, num_iterations, year
 
     # Define table headers
     headers = [
-        "Day", "Avg(s)", "STD(s)", "Time %",
-        "Avg(MB)", "STD(MB)", "Memory%",
-        "Lang", "Lines"
+        "Day", "Avg(ms)", "STD(ms)", "Time %",
+        "Avg(MB)", "STD(MB)", "Memory %",
+        "Lang", "Size(kB)", "Lines"
     ]
-    row_format = "{:<7}" + "{:<10}" * (len(headers) - 1)
+    row_format = "{:<7}" + "{:<12}" + "{:<10}" * (len(headers) - 2)
 
     # Initialize table content and DataFrame data
-    table_lines = [row_format.format(*headers), "-" * (len(headers) * 15)]
+    table_lines = [row_format.format(*headers), "-" * (len(headers) * 10)]
     data_for_df = []
 
     # Totals and aggregates for the summary row
     total_time = sum(avg_execution_times.values())
     total_memory = sum(avg_memory_usages.values())
     total_lines_of_code = 0
+    all_script_sizes = 0
     cumulative_time_percentage = 0
     cumulative_memory_percentage = 0
     cumulative_time_std = 0
@@ -84,21 +85,22 @@ def create_table(file_info, times_taken, peak_memory_usage, num_iterations, year
         cumulative_time_percentage += time_percentage
         cumulative_memory_percentage += memory_percentage
 
-        language, lines_of_code = file_info.get(day, ("N/A", 0))
+        language, lines_of_code, file_size = file_info.get(day, ("N/A", 0))
         total_lines_of_code += lines_of_code
+        all_script_sizes += file_size
 
         # Add data to the DataFrame list
         data_for_df.append([
             day, avg_time, std_time, time_percentage,
             avg_memory, std_memory, memory_percentage,
-            language, lines_of_code
+            language, file_size, lines_of_code
         ])
 
         # Add data to the text table
         table_lines.append(row_format.format(
-            f" {day} ", f"{avg_time:.2f}", f"{std_time:.2f}", f"{time_percentage:.2f}%",
-            f"{avg_memory:.2f}", f"{std_memory:.2f}", f"{memory_percentage:.2f}%", 
-            language, f"  {lines_of_code}  "
+            f" {day} ", f"{avg_time:.2f}", f" {std_time:.2f}", f"{time_percentage:.2f}%",
+            f" {avg_memory:.2f}", f" {std_memory:.2f}", f"{memory_percentage:.2f}%",
+            language, f" {file_size:.2f} ", f" {lines_of_code} "
         ))
 
         # Track all average times for further statistics
@@ -111,11 +113,11 @@ def create_table(file_info, times_taken, peak_memory_usage, num_iterations, year
     median_avg_time = np.median(all_avg_times) if all_avg_times.size > 0 else 0
 
     # Add a totals row
-    table_lines.append("-" * (len(headers) * 15))
+    table_lines.append("-" * (len(headers) * 10))
     table_lines.append(row_format.format(
         "Total", f"{total_time:.2f}", f"{cumulative_time_std:.2f}", f"{cumulative_time_percentage:.2f}%", 
-        f"{total_memory:.2f}", f"{cumulative_memory_std:.2f}", f"{cumulative_memory_percentage:.2f}%", 
-        "N/A", f"  {total_lines_of_code}"
+        f"{total_memory:.2f}", f" {cumulative_memory_std:.2f}", f"{cumulative_memory_percentage:.2f}%", 
+        " N/A", f" {all_script_sizes:.2f}", f"{total_lines_of_code}"
     ))
 
     # Add additional info
@@ -129,7 +131,7 @@ def create_table(file_info, times_taken, peak_memory_usage, num_iterations, year
     df.loc[len(df)] = [
         "Total", total_time, cumulative_time_std, cumulative_time_percentage, 
         total_memory, cumulative_memory_std, cumulative_memory_percentage, 
-        "N/A", total_lines_of_code
+        "N/A", all_script_sizes, total_lines_of_code
     ]
     print(df)
     return df, table_lines

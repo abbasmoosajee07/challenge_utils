@@ -21,7 +21,7 @@ def create_plot(df, challenge, Year, Iters, save_dir, center_color="#4CAF50", sc
     Create a plot for average times with dynamic scaling and annotations.
 
     Parameters:
-        df (DataFrame): Input data with columns ['Day', 'Avg(s)', 'STD(s)', 'Lang', 'Lines', 'Avg(MB)'].
+        df (DataFrame): Input data with columns ['Day', 'Avg(ms)', 'STD(ms)', 'Lang', 'Lines', 'Avg(MB)'].
         challenge (str): Challenge name (e.g., 'Advent of Code').
         Year (int): Year of the challenge.
         Iters (int): Num of iterations.
@@ -37,10 +37,10 @@ def create_plot(df, challenge, Year, Iters, save_dir, center_color="#4CAF50", sc
 
     # Convert the 'Day' column to numeric
     days = pd.to_numeric(df['Day'], errors='coerce')  # Convert days to numeric, coercing any errors to NaN
-    avg_times = df[f'Avg(s)'].tolist()  # Get the average times for each day
-    std_devs = df[f'STD(s)'].tolist()
+    avg_times = df[f'Avg(ms)'].tolist()  # Get the average times for each day
+    std_devs = df[f'STD(ms)'].tolist()
     avg_mems = df[f'Avg(MB)'].tolist()  # Get the average memory usage for each day
-    rel_memory = df['Memory%'].tolist()  # Percentage of total memory for each day
+    rel_memory = df['Memory %'].tolist()  # Percentage of total memory for each day
 
     # Handle the file info (Langs and Lines)
     file_info = dict(zip(df['Lang'], zip(df['Lang'], df['Lines'])))  # Create a dict of file info for Langs and Lines
@@ -64,9 +64,9 @@ def create_plot(df, challenge, Year, Iters, save_dir, center_color="#4CAF50", sc
         label_y = bar.get_height()
         label_x = (bar.get_x() + bar.get_width() / 2)
         file_path = df['Lang'].iloc[i]  # Get the file extension
-        line_count = df['Lines'].iloc[i]  # Get the line count
+        file_size = df['Size(kB)'].iloc[i]  # Get the line count
         memory = df['Avg(MB)'].iloc[i]
-        ax.annotate(f"({file_path}) {line_count} lines \n ({memory:.1f} MB)",
+        ax.annotate(f"({file_path} | {file_size:.2f} kB) \n PM = {memory:.1f} MB",
                     xy=(label_x, label_y),
                     xytext=(label_x - 0.3, label_y * 1.15),
                     arrowprops=dict(facecolor='black', arrowstyle='->'),
@@ -102,14 +102,14 @@ def create_plot(df, challenge, Year, Iters, save_dir, center_color="#4CAF50", sc
     bars[min_idx].set_linewidth(2)
 
     # Add markers for max and min points with labels
-    ax.plot(max_day, max_time, '-', color = max_color, label=f"Max ({max_time:.2f}s)", markersize=8, zorder=5)
-    ax.plot(min_day, min_time, '-', color = min_color, label=f"Min ({min_time:.2f}s)", markersize=8, zorder=5)
+    ax.plot(max_day, max_time, '-', color = max_color, label=f"Max: {max_time/1000:.2f} s", markersize=8, zorder=5)
+    ax.plot(min_day, min_time, '-', color = min_color, label=f"Min: {min_time/1000:.2f} s", markersize=8, zorder=5)
 
     # Add average and median lines
     average_time = np.mean(avg_times)  # Mean of the average times
     median_time = np.median(avg_times)  # Median of the average times
-    ax.axhline(average_time, color='#008000', linestyle='-', label=f'Average: {average_time:.2f}s')
-    ax.axhline(median_time, color='#800080', linestyle='-', label=f'Median: {median_time:.2f}s')
+    ax.axhline(average_time, color='#008000', linestyle='-', label=f'Average: {average_time/1000:.2f} s')
+    ax.axhline(median_time,  color='#800080', linestyle='-', label=f'Median: {median_time/1000:.2f} s')
 
     # Add error bars based on the standard deviation for each day
     ax.errorbar(days, avg_times, yerr=std_devs, fmt='none', color='#FFD700', capsize=3, zorder=4)
@@ -117,9 +117,9 @@ def create_plot(df, challenge, Year, Iters, save_dir, center_color="#4CAF50", sc
     # Customize x-axis and y-axis labels
     ax.set_xticks(days)
     ax.set_xticklabels([f'Day {int(day)}' for day in days], rotation=45, ha='right')  # Ensure days are displayed as integers
-    ax.set_ylabel(f"({scale.capitalize()} Scale) Average Time (s)", fontsize=14)
+    ax.set_ylabel(f"({scale.capitalize()} Scale) Average Time (ms)", fontsize=14)
     ax.set_title(f'{challenge}: Year {Year}',
-                    fontsize=18, fontweight='bold')
+                    fontsize=21, fontweight='bold')
 
     # Add grid and legend
     ax.grid(visible=True, which='major', axis='y', linestyle='--', linewidth=0.8, alpha=0.8)
@@ -133,8 +133,8 @@ def create_plot(df, challenge, Year, Iters, save_dir, center_color="#4CAF50", sc
     custom_lines = [
         plt.Line2D([0], [0], color='white', label=f"Scale: {scale.capitalize()}"),
         plt.Line2D([0], [0], color='white', label=f"Iterations: {Iters}"),
-        plt.Line2D([0], [0], color='white', label=f"Peak Memory Use: {total_mem:.2f} MB"),
-        plt.Line2D([0], [0], color='white', label=f"Avg Year Run Time: {total_time:.2f}s"),
+        plt.Line2D([0], [0], color='white', label=f"Peak Memory (PM): {total_mem:.2f} MB"),
+        plt.Line2D([0], [0], color='white', label=f"Avg Year Run Time: {total_time/1000:.2f} s"),
     ]
 
     # Existing legend items (e.g., for average, median, max, min)
