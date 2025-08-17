@@ -10,3 +10,4 @@ This repository contains coding solutions for a Coding Challenge Codes. Each day
 2. **Day 2 - C**: Test C
 3. **Day 3 - Ruby**: Test Ruby
 4. **Day 4 - Julia**: Test Julia
+5. **Day 5 - JS**: Test Javascript

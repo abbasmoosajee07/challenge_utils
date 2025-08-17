@@ -1,0 +1,9 @@
+{
+    "problem_title": "Day",
+    "challenge_folder": "test_challenge",
+    "challenge_id": "Test",
+    "problem_folder": "{problem_no:02d}",
+    "solution_pattern": "TestProb{problem_no:02d}.{lang}",
+    "challenge_header": "Test Challenge: Benchmark Utils",
+    "plot_color": "#673147"
+}

@@ -1,8 +1,6 @@
-# Coding Challenge Template
+# Challenge Utils
 
-## Project Overview
-This project contains a Python script (`TemplateCode.py`) that can be used to create a Template script in Python for Day/Challenge in a specific Year/Level.
+This repo contains a python workspace to benchmark time, memory and other properties for a series of solution scripts generally designed for coding challenges.
 
----
-
-* To initialise the Benchmarks module, use `pip install -e .` in the command line
+to install create a set_up pkg in working directory, for the challenge_utils folder and then
+`pip install -e.` in terminal.

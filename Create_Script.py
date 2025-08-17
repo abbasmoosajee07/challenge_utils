@@ -7,10 +7,11 @@ from Polyglot_Setups.Setup_Julia import create_julia_script
 from Polyglot_Setups.Setup_Python import create_python_script
 from Polyglot_Setups.Setup_Ruby import create_ruby_script
 from Polyglot_Setups.Setup_Txt import create_txt_file
+from Polyglot_Setups.Setup_JS import create_javascript_script
 
 # Define default values for variables within the script
-day = 2
-year = 2024
+day = 5
+year = "test_challenge"
 author_name = "your_name"
 
 # Define a dictionary for language options
@@ -18,11 +19,12 @@ language_script_create_functions = {
     "python": create_python_script,
     "c": create_c_script,
     "julia": create_julia_script,
+    "js": create_javascript_script,
     "ruby": create_ruby_script,
 }
 
 # Define the selected language/script type (change this variable as needed)
-selected_language = "c"  # Choose between "python", "c", "julia", "ruby"
+selected_language = "js"  # Choose between "python", "c", "julia", "ruby"
 repo_dir = os.path.dirname(os.path.abspath(__file__))
 def generate_header(day, year, author):
     """
