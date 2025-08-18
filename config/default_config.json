@@ -1,0 +1,10 @@
+{
+    "problem_title": "Day",
+    "challenge_id": "Test",
+    "challenge_folder": "test_challenge",
+    "problem_folder": "{problem_no:02d}",
+    "solution_file": "TestProb{problem_no:02d}.{lang}",
+    "challenge_header": "Test Challenge: Benchmark Utils",
+    "plot_color": "#673147",
+    "script_header": "Challenge Code - Day {day}, Year {year}\nSolution Started: {month} {current_time.tm_mday}, {current_time.tm_year}\nPuzzle Link: https://challengecode.com/{year}/day/{day}\nSolution by: {author}\nBrief: [Code/Problem Description]\n"
+}

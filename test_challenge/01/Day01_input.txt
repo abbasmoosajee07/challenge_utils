@@ -1,3 +1,0 @@
-Hello, this is a sample file.
-It contains multiple lines.
-Feel free to modify this text.

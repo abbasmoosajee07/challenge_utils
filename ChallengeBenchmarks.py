@@ -7,7 +7,7 @@ current_dir = str(Path(__file__).parent)
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
-from ChallengeConfig import ChallengeConfig
+from config.ChallengeConfig import ChallengeConfig
 from benchmarks.ResultsProcessor import ResultsProcessor
 from benchmarks.ScriptRunner import ScriptRunner
 
@@ -38,14 +38,12 @@ class ChallengeBenchmarks:
         )
 
         if save_results:
-            search_dir = custom_dir if custom_dir else self.base_dir
-            save_dir = search_dir / "analysis"
+            save_dir = custom_dir if custom_dir else self.base_dir
             save_dir.mkdir(exist_ok=True)
-            output_file = save_dir / f"{self.challenge_id}_Run_Summary.txt"
-            self.visualizer.save_table_to_file(output_file)
             self.visualizer.generate_plot(df, self.challenge_header, iterations,
                                             save_dir, self.plot_color, 'linear')
             self.visualizer.generate_plot(df, self.challenge_header, iterations,
                                             save_dir, self.plot_color, 'log')
+            self.visualizer.save_table(save_dir)
         return df
 
