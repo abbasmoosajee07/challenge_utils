@@ -1,0 +1,11 @@
+{
+    "problem_title": "Language",
+    "text_input": "Lang{problem_no:02d}_input",
+    "challenge_id": "HelloWorld",
+    "challenge_folder": "test",
+    "problem_folder": "{problem_no:02d}",
+    "solution_file": "TestLang{problem_no:02d}.{lang}",
+    "challenge_header": "Test Languages: Hello, World!",
+    "plot_color": "#673147",
+    "script_header": "Challenge Code - {id}, Day {problem_no}\nSolution Started: {month} {current_time.tm_mday}, {current_time.tm_year}\nPuzzle Link: https://challengecode.com/{id}/day/{problem_no}\nSolution by: {author}\nBrief: [Code/Problem Description]"
+}

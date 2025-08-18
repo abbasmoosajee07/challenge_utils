@@ -1,3 +1,9 @@
+import subprocess
+import glob
+import json
+import time
+import re
+import psutil
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -5,7 +11,178 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from matplotlib.cm import ScalarMappable
+from typing import Dict, List, Tuple, Optional, Dict, Any
 matplotlib.use('TkAgg')  # or 'Qt5Agg' if you have PyQt5 installed
+
+class ChallengeConfig:
+
+    def __init__(self, config_path: Optional[Path] = None, config_file:str = "challenge.json"):
+        self.config_path = config_path
+        self.config_file = config_file
+        self.config_data = self.load_config(config_path, config_file)
+        self._validate_config()
+
+    @staticmethod
+    def load_config(config_path: Optional[Path] = None, config_file:str = "challenge.json") -> Dict[str, Any]:
+        """Load config file with proper error handling"""
+        default_config = {
+            "problem_title": "Problem",
+            "challenge_folder": "Challenge",
+            "challenge_id": "Challenge",
+            "problem_folder": "Problem{:02d}",
+            "solution_pattern": "ChallengeProblem_{:02d}.{}",
+            "challenge_header": "Challenge",
+            "plot_color": "#CE7004"
+        }
+
+        # If no path provided, look in current directory
+        if config_path is None:
+            config_path = Path(config_file)
+        # If a directory was provided, look for challenge.json inside it
+        elif config_path.is_dir():
+            config_path = config_path / config_file
+
+        try:
+            if config_path.is_file():
+                with config_path.open('r', encoding='utf-8') as f:
+                    user_config = json.load(f)
+                    # Merge user config with defaults
+                    return {**default_config, **user_config}
+        except (PermissionError, json.JSONDecodeError, UnicodeDecodeError) as e:
+            print(f"Warning: Couldn't load config ({type(e).__name__}), using defaults")
+
+        return default_config
+
+    def _validate_config(self):
+        required_fields = [
+            'problem_title',
+            'challenge_folder',
+            'challenge_id',
+            'problem_folder',
+            'solution_pattern',
+            'challenge_header',
+            'plot_color'
+        ]
+        for field in required_fields:
+            if field not in self.config_data:
+                raise ValueError(f"Missing required config field: {field}")
+
+    def get_problem_folder(self, problem_no: int) -> str:
+        """Generate problem folder name from pattern"""
+        return self.config_data['problem_folder'].format(problem_no=problem_no)
+
+    def get_solution_filename(self, problem_no: int, lang: str) -> str:
+        """Generate solution filename from pattern"""
+        return self.config_data['solution_pattern'].format(
+            challenge_folder=self.config_data['challenge_folder'],
+            problem_no=problem_no,
+            lang=lang
+        )
+
+    def get_property(self, property) -> str:
+        """Get display title for problems"""
+        return self.config_data.get(property, None)
+
+class ScriptRunner:
+    """Handles execution of challenge solution scripts and performance measurement"""
+    supported_languages =  ["py", "jl", "rb", "js", "c"]
+
+    def __init__(self):
+        self.times_taken: Dict[int, List[float]] = {}
+        self.file_info: Dict[int, Tuple[str, int, float]] = {}
+        self.peak_memory_usage: Dict[int, List[float]] = {}
+
+    def get_file_line_count(self, file_path: Path) -> int:
+        try:
+            with file_path.open("r", encoding="utf-8") as file:
+                return len(file.readlines())
+        except Exception:
+            return 0
+
+    def get_file_size(self, file_path: Path) -> float:
+        try:
+            return file_path.stat().st_size / 1024
+        except Exception:
+            return 0.0
+
+    def monitor_memory_usage(self, process: subprocess.Popen) -> float:
+        try:
+            peak_memory = 0.0
+            while process.poll() is None:
+                mem_info = psutil.Process(process.pid).memory_info()
+                peak_memory = max(peak_memory, mem_info.rss)
+                time.sleep(0.1)
+            return peak_memory / (1024 ** 2)  # MB
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            return 0.0
+
+    def run_script(self, file_path: Path) -> Optional[Tuple[str, int, float, float, float]]:
+        extension = file_path.suffix
+        file_name = file_path.name
+
+        try:
+            if extension in ['.txt', '.png', '.exe']:
+                return None
+            if file_name.startswith("Alt"):
+                print(f"Skipping script: {file_name} (starts with 'Alt')")
+                return None
+            else:
+                print(f"Running script: {file_name}")
+
+            start_time = time.time()
+            process = None
+
+            if extension == '.py':
+                process = subprocess.Popen(['python', str(file_path)])
+            elif extension == '.c':
+                executable = file_path.with_suffix('')
+                subprocess.run(['gcc', str(file_path), '-o', str(executable)], check=True)
+                process = subprocess.Popen([str(executable)])
+            elif extension == '.rb':
+                process = subprocess.Popen(['ruby', str(file_path)])
+            elif extension == '.jl':
+                process = subprocess.Popen(['julia', str(file_path)])
+            elif extension == '.js':
+                process = subprocess.Popen(['node', str(file_path)])
+            else:
+                print(f"Unsupported file type for {file_name}. Skipping.")
+                return None
+
+            peak_memory = self.monitor_memory_usage(process)
+            process.wait()
+            line_count = self.get_file_line_count(file_path)
+            file_size = self.get_file_size(file_path)
+            elapsed_time = (time.time() - start_time) * 1000  # ms
+
+            return extension, line_count, file_size, elapsed_time, peak_memory
+        except subprocess.CalledProcessError as e:
+            print(f"Error executing {file_name}: {e}")
+            return None
+
+    def _record_result(self, problem_number: int, result: Tuple[str, int, float, float, float]):
+        ext, lines, size, time_ms, memory = result
+        if problem_number not in self.times_taken:
+            self.times_taken[problem_number] = []
+            self.peak_memory_usage[problem_number] = []
+            self.file_info[problem_number] = (
+                f"{ext}", lines, size
+            )
+        self.times_taken[problem_number].append(time_ms)
+        self.peak_memory_usage[problem_number].append(memory)
+
+    def process_directory(self, base_dir: Path, problems_to_run: List[int],
+                        iterations: int, config: ChallengeConfig):
+        for iteration in range(iterations):
+            print(f"\nIteration {iteration + 1}/{iterations}")
+            for problem_no in problems_to_run:
+                problem_folder = config.get_problem_folder(problem_no)
+                problem_path = base_dir / problem_folder
+                for lang in self.supported_languages:
+                    solution_pattern = config.get_solution_filename(problem_no, lang)
+                    for solution_file in problem_path.glob(solution_pattern):
+                        result = self.run_script(solution_file)
+                        if result:
+                            self._record_result(problem_no, result)
 
 class ResultsProcessor:
     """Combines performance results table generation and visualization plotting"""
@@ -84,45 +261,44 @@ class ResultsProcessor:
             "Avg(MB)", "STD(MB)", "Memory %",
             "Lang", "Size(kB)", "Lines"
         ])
-
+        
         return df
 
     def _calculate_stats(self, times_taken, peak_memory_usage):
         """Calculate performance statistics"""
         stats = {}
         total_time = total_memory = 0
-
+        
         for problem in times_taken:
             times = times_taken[problem]
             mems = peak_memory_usage.get(problem, [])
-
+            
             avg_time = np.mean(times) if times else 0
             std_time = np.std(times) if times else 0
             avg_mem = np.mean(mems) if mems else 0
             std_mem = np.std(mems) if mems else 0
-
+            
             stats[problem] = {
                 'avg_time': avg_time,
                 'std_time': std_time,
                 'avg_mem': avg_mem,
                 'std_mem': std_mem
             }
-
+            
             total_time += avg_time
             total_memory += avg_mem
-
+            
         stats['total'] = {
             'time': total_time,
             'memory': total_memory,
             'time_std': sum(s['std_time'] for s in stats.values()),
             'memory_std': sum(s['std_mem'] for s in stats.values())
         }
-
+        
         return stats
 
-    def save_table(self, save_dir: Path):
+    def save_table_to_file(self, file_path: Path):
         """Save table to text file"""
-        file_path = save_dir / f"{self.challenge_id}_results.txt"
         with file_path.open('w') as f:
             f.write("\n".join(self.table_lines))
         print(f"Results table saved to {file_path}")
@@ -153,7 +329,7 @@ class ResultsProcessor:
 
         # Finalize and save
         plt.tight_layout()
-        plot_path = save_dir / f"{self.challenge_id}_{scale}.png"
+        plot_path = save_dir / f"{self.challenge_id}_{scale}_plot.png"
         plt.savefig(plot_path, bbox_inches='tight')
         plt.show()
 
@@ -201,7 +377,7 @@ class ResultsProcessor:
         ax.grid(True, which='major', axis='y', linestyle='--', linewidth=0.8, alpha=0.8)
         ax.minorticks_on()
         ax.grid(True, which='minor', axis='y', linestyle=':', linewidth=0.6, alpha=0.6)
-
+        
         if scale == 'linear':
             ax.set_ylim(0, max(avg_times) * 1.425)
         else:
@@ -215,9 +391,9 @@ class ResultsProcessor:
         bars[min_idx].set_edgecolor('blue')
         bars[min_idx].set_linewidth(2)
         ax.plot(problems[max_idx], avg_times[max_idx], '-', color='red', 
-                label=f"Max: {avg_times[max_idx]/1000:.2f} s", markersize=8, zorder=5)
+               label=f"Max: {avg_times[max_idx]/1000:.2f} s", markersize=8, zorder=5)
         ax.plot(problems[min_idx], avg_times[min_idx], '-', color='blue',
-                label=f"Min: {avg_times[min_idx]/1000:.2f} s", markersize=8, zorder=5)
+               label=f"Min: {avg_times[min_idx]/1000:.2f} s", markersize=8, zorder=5)
 
     def _add_reference_lines(self, ax, avg_times):
         """Add reference lines"""
@@ -229,18 +405,18 @@ class ResultsProcessor:
     def _add_error_bars(self, ax, problems, avg_times, std_devs):
         """Add error bars"""
         ax.errorbar(problems, avg_times, yerr=std_devs, fmt='none', 
-                    color='#FFD700', capsize=3, zorder=4)
+                   color='#FFD700', capsize=3, zorder=4)
 
     def _add_legends(self, ax, challenge, iterations, avg_times, avg_mems):
         """Add complex legend"""
         total_time = np.sum(avg_times)
         total_mem = np.sum(avg_mems)
-
+        
         # Main legend items
         legend_items = ax.legend(loc='upper left', bbox_to_anchor=(0, 1), 
                                 fontsize=7, frameon=True, 
                                 facecolor='white', edgecolor='black')
-
+        
         # Custom info lines
         custom_lines = [
             plt.Line2D([0], [0], color='white', label=f"Scale: {ax.get_yscale().capitalize()}"),
@@ -248,7 +424,7 @@ class ResultsProcessor:
             plt.Line2D([0], [0], color='white', label=f"Peak Memory (PM): {total_mem:.2f} MB"),
             plt.Line2D([0], [0], color='white', label=f"Avg Run Time: {total_time/1000:.2f} s"),
         ]
-
+        
         # Combined legend
         final_legend = ax.legend(
             handles=custom_lines + legend_items.legend_handles,
@@ -267,3 +443,63 @@ class ResultsProcessor:
         norm = mcolors.Normalize(vmin=min(rel_memory), vmax=max(rel_memory))
         cbar = fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), ax=ax)
         cbar.set_label('Relative Percentage of Total Peak Memory (%)', fontsize=12)
+
+class ChallengeBenchmarks:
+    """Main class that coordinates the performance analysis workflow"""
+    def __init__(self, base_dir: Path, config_file: str = ""):
+        self.base_dir = base_dir
+        self.config = ChallengeConfig(base_dir, config_file)
+        self.plot_color = self.config.get_property("plot_color")
+        self.challenge_id = self.config.get_property("challenge_id")
+        self.challenge_header = self.config.get_property("challenge_header")
+        self.script_runner = ScriptRunner()
+        self.visualizer = ResultsProcessor(self.challenge_id, self.config.get_property("problem_title"))
+
+    def analyze(self, problems_to_run: List[int], iterations: int = 5, save_results: bool = True,
+                custom_dir: Optional[Path] = None):
+        print(f"\n{self.challenge_header}")
+        print(f"Analyzing problems {min(problems_to_run)} to {max(problems_to_run)} over {iterations} iterations")
+
+        self.script_runner.process_directory(self.base_dir, problems_to_run, iterations, self.config)
+
+        df = self.visualizer.generate_table(
+            self.script_runner.file_info,
+            self.script_runner.times_taken,
+            self.script_runner.peak_memory_usage,
+            iterations,
+            self.challenge_header,
+        )
+
+        if save_results:
+            search_dir = custom_dir if custom_dir else self.base_dir
+            save_dir = search_dir / "analysis"
+            save_dir.mkdir(exist_ok=True)
+            output_file = save_dir / f"{self.challenge_id}_Run_Summary.txt"
+            self.visualizer.save_table_to_file(output_file)
+            self.visualizer.generate_plot(df, self.challenge_header, iterations,
+                                            save_dir, self.plot_color, 'linear')
+            self.visualizer.generate_plot(df, self.challenge_header, iterations,
+                                            save_dir, self.plot_color, 'log')
+        return df
+
+if __name__ == "__main__":
+
+    base_dir = Path.cwd() / str("test_challenge")
+    script_dir = Path(__file__).parent.resolve()
+    selected_dir = script_dir
+    config_file = "test_challenge.json"
+    PROBLEMS_TO_RUN = list(range(1, 26))  # Problems 1-25
+
+    analyzer = ChallengeBenchmarks(
+        base_dir = selected_dir,
+        config_file = config_file,
+    )
+
+    results = analyzer.analyze(
+        problems_to_run= PROBLEMS_TO_RUN,  # Problems 1-25
+        iterations=3,
+        save_results=True,
+    )
+
+    print("\nAnalysis complete!")
+    print(results.head(25))
