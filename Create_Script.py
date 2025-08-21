@@ -1,8 +1,7 @@
 import sys, os, time
 from pathlib import Path
 from typing import Optional, Dict, Any
-from config.ChallengeConfig import ChallengeConfig
-from challenge_utils.ScriptBuilder import ScriptBuilder
+from challenge_utils import ScriptBuilder
 
 def main():
     author = "Your Name"
@@ -14,8 +13,8 @@ def main():
 
     # Example: create a Python script for problem 7
     filepath = builder.create_files(
-        prob_no=2,
-        language="c",
+        prob_no=7,
+        language="java",
         txt_files=1,
         )
     # print(f"Script created at: {filepath}")

@@ -3,4 +3,7 @@
 # *Day??_p?_input.txt
 
 __pycache__/
+*/target/
 *.exe
+*.pdb
+*.class

@@ -7,9 +7,9 @@ current_dir = str(Path(__file__).parent)
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
-from config.ChallengeConfig import ChallengeConfig
-from benchmarks.ResultsProcessor import ResultsProcessor
-from benchmarks.ScriptRunner import ScriptRunner
+from ..config.ChallengeConfig import ChallengeConfig
+from ..benchmarks.ScriptRunner import ScriptRunner
+from ..benchmarks.ResultsProcessor import ResultsProcessor
 
 class ChallengeBenchmarks:
     """Main class that coordinates the performance analysis workflow"""

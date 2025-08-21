@@ -23,43 +23,40 @@ class ChallengeConfig:
         self._validate_config()
 
     @staticmethod
-    def load_config(config_path: Optional[Path] = None, config_file:str = "challenge.json") -> Dict[str, Any]:
-        """Load config file with proper error handling"""
-        default_config = {
-            "problem_title": "Problem",
-            "challenge_folder": "Challenge",
-            "challenge_id": "Challenge",
-            "problem_folder": "Problem{:02d}",
-            "solution_pattern": "ChallengeProblem_{:02d}.{}",
-            "challenge_header": "Challenge",
-            "plot_color": "#CE7004"
-        }
+    def load_config(config_path: Optional[Path] = None, config_file: str = None) -> Dict[str, Any]:
+        """Load user config if available, otherwise fall back to default config.
+        Raises an error if neither can be loaded."""
 
-        # If no path provided, look in current directory
-        if config_path is None:
-            config_path = Path(config_file)
-        # If a directory was provided, look for challenge.json inside it
-        elif config_path.is_dir():
-            config_path = config_path / config_file
+        # Location of bundled default config
+        default_config_path = Path(__file__).parent / "default_config.json"
 
-        try:
+        # 1. Try to load user config if provided
+        if config_path is not None and config_file is not None:
+            if config_path.is_dir():
+                config_path = config_path / config_file
             if config_path.is_file():
-                with config_path.open('r', encoding='utf-8') as f:
-                    user_config = json.load(f)
-                    # Merge user config with defaults
-                    return {**default_config, **user_config}
-        except (PermissionError, json.JSONDecodeError, UnicodeDecodeError) as e:
-            print(f"Warning: Couldn't load config ({type(e).__name__}), using defaults")
+                try:
+                    with config_path.open("r", encoding="utf-8") as f:
+                        return json.load(f)
+                except (PermissionError, json.JSONDecodeError, UnicodeDecodeError) as e:
+                    raise RuntimeError(f"Failed to load user config: {type(e).__name__} - {e}")
 
-        return default_config
+        # 2. Try to load default config
+        if not default_config_path.is_file():
+            raise FileNotFoundError(f"Default config file not found: {default_config_path}")
+        try:
+            with default_config_path.open("r", encoding="utf-8") as f:
+                return json.load(f)
+        except (PermissionError, json.JSONDecodeError, UnicodeDecodeError) as e:
+            raise RuntimeError(f"Failed to load default config: {type(e).__name__} - {e}")
 
     def _validate_config(self):
         required_fields = [
+            'challenge_id',
             'problem_title',
             'challenge_folder',
-            'challenge_id',
             'problem_folder',
-            'solution_pattern',
+            'solution_file',
             'challenge_header',
             'plot_color'
         ]
@@ -73,7 +70,7 @@ class ChallengeConfig:
 
     def get_solution_filename(self, problem_no: int, lang: str) -> str:
         """Generate solution filename from pattern"""
-        return self.config_data['solution_pattern'].format(
+        return self.config_data['solution_file'].format(
             challenge_folder=self.config_data['challenge_folder'],
             problem_no=problem_no,
             lang=lang
@@ -82,7 +79,6 @@ class ChallengeConfig:
     def get_property(self, property) -> str:
         """Get display title for problems"""
         return self.config_data.get(property, None)
-
 class ScriptRunner:
     """Handles execution of challenge solution scripts and performance measurement"""
     supported_languages =  ["py", "jl", "rb", "js", "c"]
@@ -116,49 +112,6 @@ class ScriptRunner:
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             return 0.0
 
-    def run_script(self, file_path: Path) -> Optional[Tuple[str, int, float, float, float]]:
-        extension = file_path.suffix
-        file_name = file_path.name
-
-        try:
-            if extension in ['.txt', '.png', '.exe']:
-                return None
-            if file_name.startswith("Alt"):
-                print(f"Skipping script: {file_name} (starts with 'Alt')")
-                return None
-            else:
-                print(f"Running script: {file_name}")
-
-            start_time = time.time()
-            process = None
-
-            if extension == '.py':
-                process = subprocess.Popen(['python', str(file_path)])
-            elif extension == '.c':
-                executable = file_path.with_suffix('')
-                subprocess.run(['gcc', str(file_path), '-o', str(executable)], check=True)
-                process = subprocess.Popen([str(executable)])
-            elif extension == '.rb':
-                process = subprocess.Popen(['ruby', str(file_path)])
-            elif extension == '.jl':
-                process = subprocess.Popen(['julia', str(file_path)])
-            elif extension == '.js':
-                process = subprocess.Popen(['node', str(file_path)])
-            else:
-                print(f"Unsupported file type for {file_name}. Skipping.")
-                return None
-
-            peak_memory = self.monitor_memory_usage(process)
-            process.wait()
-            line_count = self.get_file_line_count(file_path)
-            file_size = self.get_file_size(file_path)
-            elapsed_time = (time.time() - start_time) * 1000  # ms
-
-            return extension, line_count, file_size, elapsed_time, peak_memory
-        except subprocess.CalledProcessError as e:
-            print(f"Error executing {file_name}: {e}")
-            return None
-
     def _record_result(self, problem_number: int, result: Tuple[str, int, float, float, float]):
         ext, lines, size, time_ms, memory = result
         if problem_number not in self.times_taken:
@@ -171,18 +124,74 @@ class ScriptRunner:
         self.peak_memory_usage[problem_number].append(memory)
 
     def process_directory(self, base_dir: Path, problems_to_run: List[int],
-                        iterations: int, config: ChallengeConfig):
+                        iterations: int, config: object):
         for iteration in range(iterations):
-            print(f"\nIteration {iteration + 1}/{iterations}")
+            print(f"\nIteration run: {iteration + 1}/{iterations}\n")
             for problem_no in problems_to_run:
                 problem_folder = config.get_problem_folder(problem_no)
                 problem_path = base_dir / problem_folder
                 for lang in self.supported_languages:
                     solution_pattern = config.get_solution_filename(problem_no, lang)
+                    text_input = config.get_property("text_input").format(problem_no=problem_no)
+                    input_path = problem_path / f"{text_input}.txt"
                     for solution_file in problem_path.glob(solution_pattern):
-                        result = self.run_script(solution_file)
+                        result = self.run_script(solution_file, input_path)
                         if result:
                             self._record_result(problem_no, result)
+
+    def run_script(self, file_path: Path, text_file = None) -> Optional[Tuple[str, int, float, float, float]]:
+        extension = file_path.suffix.lower()
+        file_name = file_path.name
+
+        # Early exit conditions
+        if extension in {'.txt', '.png', '.exe'} or file_name.startswith("Alt"):
+            print(f"Skipping script: {file_name}" + 
+                (" (unsupported extension)" if extension in {'.txt', '.png', '.exe'} else " (starts with 'Alt')"))
+            return None
+
+        # Command mapping for different file types
+        command_map = {
+            '.py': ['python', str(file_path)],
+            '.c': {
+                'compile': ['gcc', str(file_path), '-o', str(file_path.with_suffix(''))],
+                'run': [str(file_path.with_suffix('')), text_file]
+            },
+            '.rb': ['ruby', str(file_path)],
+            '.jl': ['julia', str(file_path)],
+            '.js': ['node', str(file_path)]
+        }
+
+        if extension not in command_map:
+            print(f"Unsupported file type for {file_name}. Skipping.")
+            return None
+
+        print(f"\nRunning script: {file_name}")
+        start_time = time.time()
+        process = None
+
+        try:
+            if extension in ['.c']:
+                subprocess.run(command_map[extension]['compile'], check=True)
+                process = subprocess.Popen(command_map[extension]['run'])
+            else:
+                process = subprocess.Popen(command_map[extension])
+
+            peak_memory = self.monitor_memory_usage(process)
+            process.wait()
+
+            return (
+                extension,
+                self.get_file_line_count(file_path),
+                self.get_file_size(file_path),
+                (time.time() - start_time) * 1000,  # ms
+                peak_memory
+            )
+        except subprocess.CalledProcessError as e:
+            print(f"Error executing {file_name}: {e}")
+            return None
+        finally:
+            if process and process.poll() is None:
+                process.terminate()
 
 class ResultsProcessor:
     """Combines performance results table generation and visualization plotting"""
@@ -482,12 +491,14 @@ class ChallengeBenchmarks:
                                             save_dir, self.plot_color, 'log')
         return df
 
+
 if __name__ == "__main__":
 
-    base_dir = Path.cwd() / str("test_challenge")
+    base_dir = Path.cwd() / str("test_config")
     script_dir = Path(__file__).parent.resolve()
     selected_dir = script_dir
-    config_file = "test_challenge.json"
+    config_file = "test_config.json"
+
     PROBLEMS_TO_RUN = list(range(1, 26))  # Problems 1-25
 
     analyzer = ChallengeBenchmarks(
@@ -497,8 +508,9 @@ if __name__ == "__main__":
 
     results = analyzer.analyze(
         problems_to_run= PROBLEMS_TO_RUN,  # Problems 1-25
-        iterations=3,
-        save_results=True,
+        iterations=1,
+        save_results=False,
+        custom_dir= script_dir / "analysis"
     )
 
     print("\nAnalysis complete!")

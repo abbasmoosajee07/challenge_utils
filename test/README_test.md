@@ -2,7 +2,7 @@
 
 This repository contains coding solutions for a Coding Challenge Codes. Each day's challenge offers unique puzzles requiring efficient coding, algorithmic thinking, and optimization.
 
-![test Full Runtime](analysis/TestResults_log.png)
+![test Full Runtime](analysis/HelloWorld_log.png)
 
 ## Day-by-Day Coding Overview
 
@@ -11,3 +11,5 @@ This repository contains coding solutions for a Coding Challenge Codes. Each day
 3. **Day 3 - Ruby**: Test Ruby
 4. **Day 4 - Julia**: Test Julia
 5. **Day 5 - JS**: Test Javascript
+6. **Day 6 - Rust**: Test Rust
+7. **Day 7 - Java**: Test Java

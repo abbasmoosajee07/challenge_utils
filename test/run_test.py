@@ -1,14 +1,5 @@
-import sys
 from pathlib import Path
-
-# Get the absolute path to the parent directory containing challenge_utils
-challenge_utils_path = str(Path(__file__).parent.parent)  # Goes up one level
-# Add to Python path (only if not already there)
-if challenge_utils_path not in sys.path:
-    sys.path.insert(0, challenge_utils_path)
-
-# Now import your module
-from ChallengeBenchmarks import ChallengeBenchmarks
+from challenge_utils import ChallengeBenchmarks
 
 if __name__ == "__main__":
 
