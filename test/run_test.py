@@ -8,7 +8,7 @@ if __name__ == "__main__":
     selected_dir = script_dir
     config_file = "test_config.json"
 
-    PROBLEMS_TO_RUN = list(range(1, 26))  # Problems 1-25
+    PROBLEMS_TO_RUN = list(range(1, 26))
 
     analyzer = ChallengeBenchmarks(
         base_dir = selected_dir,

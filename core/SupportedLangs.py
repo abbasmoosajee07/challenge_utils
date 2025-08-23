@@ -24,7 +24,7 @@ class Language_Support:
     @property
     def supported_languages(self) -> List[str]:
         """Return list of supported language extensions."""
-        return ["py", "jl", "rb", "js", "c", "rs", "java"]
+        return ["py", "jl", "rb", "js", "c", "rs", "java", "cpp", "hs", "go"]
 
     @property
     def all_languages(self) -> List[str]:
@@ -37,12 +37,15 @@ class Language_Support:
         return {
             "c": ("c_template.c", "c"),
             "js": ("js_template.js", "js"),
+            "go": ("go_template.go", "go"),
+            "cpp": ("cpp_template.cpp", "cpp"),
             "txt": ("txt_template.txt", "txt"),
             "ruby": ("ruby_template.rb", "rb"),
             "rust": ("rust_template.rs", "rs"),
-            "julia": ("julia_template.jl", "jl"),
             "java": ("java_template.java", "java"),
+            "julia": ("julia_template.jl", "jl"),
             "python": ("python_template.py", "py"),
+            "haskell": ("haskell_template.hs", "hs"),
         }
 
     def _initialize_language_config(self) -> None:

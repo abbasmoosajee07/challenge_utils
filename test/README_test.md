@@ -13,3 +13,6 @@ This repository contains coding solutions for a Coding Challenge Codes. Each day
 5. **Day 5 - JS**: Test Javascript
 6. **Day 6 - Rust**: Test Rust
 7. **Day 7 - Java**: Test Java
+8. **Day 8 - C++**: Test C++
+9. **Day 9 - GO**: Test GO
+10. **Day 10 - Haskell**: Test Haskell
