@@ -139,12 +139,33 @@ class Language_Support:
                 'cleanup': [str(dummy_file.with_suffix('.class'))],
                 'tool_check': ['javac', '-version']
             },
+            # '.rs': {
+            #     'compile': ['rustc', str(dummy_file), '-o', str(dummy_exe)],
+            #     'run': [str(dummy_exe)],
+            #     'input_method': 'arg',
+            #     'cleanup': [str(dummy_exe)],
+            #     'tool_check': ['rustc', '--version']
+            # },
             '.rs': {
-                'compile': ['rustc', str(dummy_file), '-o', str(dummy_exe)],
-                'run': [str(dummy_exe)],
+                'compile': lambda file_path, exe_path: (
+                    None if (file_path.parent / "Cargo.toml").exists()
+                    else ['rustc', str(file_path), '-o', str(exe_path)]
+                ),
+                'run': lambda file_path, exe_path: (
+                    ['cargo', 'run', '--quiet', '--bin', file_path.stem]
+                    if (file_path.parent / "Cargo.toml").exists()
+                    else [str(exe_path)]
+                ),
                 'input_method': 'arg',
-                'cleanup': [str(dummy_exe)],
-                'tool_check': ['rustc', '--version']
+                'cleanup': lambda file_path, exe_path: (
+                    [] if (file_path.parent / "Cargo.toml").exists()
+                    else [str(exe_path)]
+                ),
+                'tool_check': lambda file_path: (
+                    ['cargo', '--version']
+                    if (file_path.parent / "Cargo.toml").exists()
+                    else ['rustc', '--version']
+                )
             },
 
             # Other languages

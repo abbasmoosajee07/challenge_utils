@@ -97,23 +97,33 @@ class ScriptRunner:
 
         try:
             # --- Compilation (if needed) ---
-            if "compile" in config:
+            compile_cmd = config.get("compile")
+            if callable(compile_cmd):
+                compile_cmd = compile_cmd(file_path, exe_path)
+
+            if compile_cmd:
                 try:
                     subprocess.run(
-                        config["compile"],
+                        compile_cmd,
                         check=True,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         text=True,
                     )
-                    if cleanup and "cleanup" in config:
-                        cleanup_files.extend(config["cleanup"])
+                    cleanup_val = config.get("cleanup")
+                    if cleanup and cleanup_val:
+                        cleanup_files.extend(
+                            cleanup_val(file_path, exe_path) if callable(cleanup_val) else cleanup_val
+                        )
                 except subprocess.CalledProcessError as e:
                     print(f"Compilation failed for {file_name}:\n{e.stderr}")
                     return None
 
             # --- Prepare execution ---
-            run_cmd = config["run"].copy()
+            run_cmd = config["run"]
+            if callable(run_cmd):
+                run_cmd = run_cmd(file_path, exe_path)
+
             if input_file and config.get("input_method") == "arg":
                 run_cmd.append(str(input_file))
 

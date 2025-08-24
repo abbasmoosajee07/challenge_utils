@@ -18,7 +18,7 @@ if __name__ == "__main__":
     results = analyzer.analyze(
         problems_to_run= PROBLEMS_TO_RUN,  # Problems 1-25
         iterations=3,
-        save_results=True,
+        save_results=False,
         custom_dir= script_dir / "analysis"
     )
 
