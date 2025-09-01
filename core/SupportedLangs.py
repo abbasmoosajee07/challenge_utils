@@ -139,13 +139,6 @@ class Language_Support:
                 'cleanup': [str(dummy_file.with_suffix('.class'))],
                 'tool_check': ['javac', '-version']
             },
-            # '.rs': {
-            #     'compile': ['rustc', str(dummy_file), '-o', str(dummy_exe)],
-            #     'run': [str(dummy_exe)],
-            #     'input_method': 'arg',
-            #     'cleanup': [str(dummy_exe)],
-            #     'tool_check': ['rustc', '--version']
-            # },
             '.rs': {
                 'compile': lambda file_path, exe_path: (
                     None if (file_path.parent / "Cargo.toml").exists()

@@ -5,6 +5,7 @@ from challenge_utils import ScriptBuilder
 
 def main():
     author = "Your Name"
+    os.chdir(Path(__file__).parent.parent)
     repo_dir = Path(__file__).parent       # root of your challenge repo
     challenge_dir = repo_dir / "test"
     config_file = "test_config.json"         # your config file name
